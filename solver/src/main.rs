@@ -1,14 +1,11 @@
+use std::collections::HashSet;
+
 struct Rational {
     numerator: i64,
     denominator: i64
 }
 
-enum Operator {
-    Add,
-    Subtract,
-    Multiply,
-    Divide
-}
+const operations: [char;4] = ['+', '-', '*', '/'];
 
 fn calculate(left: &Rational, right: &Rational, op: i32) -> Rational {
     let ln = left.numerator;
@@ -39,51 +36,38 @@ fn calculate(left: &Rational, right: &Rational, op: i32) -> Rational {
     return r;
 }
 
-fn reducer(rationals: &[Rational], solution:&mut Vec<char>) -> bool {
-    println!("len:{}", rationals.len());
-    if rationals.len() == 1 {
-        let rational = &rationals[0];
-        println!("{}/{}", rational.numerator, rational.denominator);
-        if rational.denominator != 0 && rational.numerator == rational.denominator * 10 {
-            return true;
-        }
-        return false;
-    }
-    for i in 0..rationals.len() - 1 {
-        for j in i + 1..rationals.len() {
-            // push two other numbers first
-            let mut new_rationals = vec![];
-            for k in 0..rationals.len() {
-                if i == k || j == k {
+fn solve(numbers: &[i32])  {
+    let mut numberSet: HashSet<String> = HashSet::new();
+    {
+        let len = numbers.len();
+        let mut bin = vec![0; len];
+        let mut numberString = "".to_string();
+        fn make_numbers(numbers: &[i32], bin: &mut Vec<i32>, numberString: &mut String, numberSet: &mut HashSet<String>) {
+            if numberString.len() == numbers.len() {
+                if !numberSet.contains(numberString) {
+                    numberSet.insert(numberString.clone());
+                }
+                return;
+            }
+            for i in 0..numbers.len() {
+                if bin[i] == 1 {
                     continue;
                 }
-                new_rationals.push(Rational{..rationals[k]});
-            }
-            for l in 0..6 {
-                let r = calculate(&rationals[i], &rationals[j], l);
-                new_rationals.push(r);
-                if reducer(&new_rationals, solution) {
-                    return true;
-                }
-                new_rationals.pop();
+                bin[i] = 1;
+                numberString.push(('0' as u8 + numbers[i] as u8) as char);
+                make_numbers(numbers, bin, numberString, numberSet);
+                numberString.pop();
+                bin[i] = 0;
             }
         }
+        make_numbers(numbers, &mut bin, &mut numberString, &mut numberSet);
     }
-    return false;
-}
-
-fn solve(numbers: &[i64])  {
-    let mut rationals = vec![];
-    for i in 0..numbers.len() {
-        let rational = Rational { numerator: numbers[i], denominator: 1 };
-        rationals.push(rational);
+    for numberString in numberSet {
+        println!("{}", numberString);
     }
-    let mut solution = vec![];
-    let result = reducer(&rationals, &mut solution);
-    println!("{}", result);
 }
 
 fn main() {
-    let numbers = &[9, 9, 9, 9];
+    let numbers = &[1, 1, 5, 8];
     solve(numbers);
 }
