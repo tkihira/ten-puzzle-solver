@@ -36,7 +36,7 @@ fn calculate(left: &Rational, right: &Rational, op: i32) -> Rational {
     return r;
 }
 
-fn solve(numbers: &[i32])  {
+fn solve(numbers: &[i32], operators: &str)  {
     let mut numberSet: HashSet<String> = HashSet::new();
     {
         let len = numbers.len();
@@ -62,12 +62,39 @@ fn solve(numbers: &[i32])  {
         }
         make_numbers(numbers, &mut bin, &mut numberString, &mut numberSet);
     }
-    for numberString in numberSet {
-        println!("{}", numberString);
+    let mut expressionSet:HashSet<String> = HashSet::new();
+    for mut numberString in numberSet {
+        let mut result = "".to_string();
+        fn inject_operators(numberString: &mut String, operator: &str, result: &mut String, numberCount: i32, operatorCount: i32, expressionSet:&mut HashSet<String>) {
+            if numberString.len() == 0 && numberCount == operatorCount + 1 {
+                if !expressionSet.contains(result) {
+                    expressionSet.insert(result.clone());
+                }
+                return;
+            }
+            if numberCount > operatorCount + 1 {
+                for c in operator.chars() {
+                    result.push(c);
+                    inject_operators(numberString, operator, result, numberCount, operatorCount + 1, expressionSet);
+                    result.pop();
+                }
+            }
+            if numberString.len() > 0 {
+                let c = match numberString.pop() { Some(x) => x, _ => ' ' };
+                result.push(c);
+                inject_operators(numberString, operator, result, numberCount + 1, operatorCount, expressionSet);
+                result.pop();
+                numberString.push(c);
+            }
+        }
+        inject_operators(&mut numberString, operators, &mut result, 0, 0, &mut expressionSet);
+    }
+    for mut expressionString in expressionSet {
+        println!("{}", expressionString);
     }
 }
 
 fn main() {
     let numbers = &[1, 1, 5, 8];
-    solve(numbers);
+    solve(numbers, "+-*/");
 }
