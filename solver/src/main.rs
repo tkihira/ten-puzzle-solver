@@ -2,50 +2,82 @@ use std::collections::HashSet;
 
 struct Rational {
     numerator: i64,
-    denominator: i64
+    denominator: i64,
 }
 
-const operations: [char;4] = ['+', '-', '*', '/'];
-
-fn calculate(left: &Rational, right: &Rational, op: i32) -> Rational {
+fn calculate(left: &Rational, right: &Rational, op: char) -> Rational {
     let ln = left.numerator;
     let ld = left.denominator;
     let rn = right.numerator;
     let rd = right.denominator;
-    
+
     let n = match op {
-        0 => ln * rd + rn * ld,
-        1 => ln * rd - rn * ld,
-        2 => rn * ld - ln * rd,
-        3 => ln * rn,
-        4 => ln * rd,
-        5 => rn * ld,
-        _ => 999999999999999999
+        '+' => ln * rd + rn * ld,
+        '-' => ln * rd - rn * ld,
+        '*' => ln * rn,
+        '/' => ln * rd,
+        _ => panic!("unknown operator"),
     };
     let d = match op {
-        0 => ld * rd,
-        1 => ld * rd,
-        2 => ld * rd,
-        3 => ld * rd,
-        4 => ld * rn,
-        5 => rd * ln,
-        _ => 9999999999999999999
+        '+' => ld * rd,
+        '-' => ld * rd,
+        '*' => ld * rd,
+        '/' => ld * rn,
+        _ => panic!("unknown operator"),
     };
 
-    let r = Rational { numerator: n, denominator: d};
+    let r = Rational {
+        numerator: n,
+        denominator: d,
+    };
     return r;
 }
 
-fn solve(numbers: &[i32], operators: &str)  {
-    let mut numberSet: HashSet<String> = HashSet::new();
+fn calculate_expression(expression_string: &str) -> bool {
+    let mut stack = vec![];
+    for c in expression_string.chars() {
+        match c {
+            '+' | '-' | '*' | '/' => {
+                let right = stack.pop().unwrap();
+                let left = stack.pop().unwrap();
+                stack.push(calculate(&left, &right, c));
+            }
+            '0'...'9' => {
+                // expected '0' - '9'
+                stack.push(Rational {
+                    numerator: c as i64 - '0' as i64,
+                    denominator: 1,
+                });
+            }
+            _ => panic!("unkwown character"),
+        }
+    }
+    let result = stack.pop().unwrap();
+    if result.numerator == result.denominator * 10 {
+        return true;
+        //println!("{}", expression_string);
+    }
+    return false;
+}
+
+fn solve(numbers: &[i32], operators: &str) {
+    // Make possible numbers,
+    // like 1234 1243 1324 1342 1423 1432 2134 2143 2314 2341 2413 2431
+    //      3124 3142 3214 3241 3412 3421 4123 4132 4213 4231 4312 4321
+    let mut number_set: HashSet<String> = HashSet::new();
     {
         let len = numbers.len();
-        let mut bin = vec![0; len];
-        let mut numberString = "".to_string();
-        fn make_numbers(numbers: &[i32], bin: &mut Vec<i32>, numberString: &mut String, numberSet: &mut HashSet<String>) {
-            if numberString.len() == numbers.len() {
-                if !numberSet.contains(numberString) {
-                    numberSet.insert(numberString.clone());
+        let mut bin = vec![0; len]; // flag 1 = used / 0 = unused
+        let mut number_string = "".to_string();
+        fn make_numbers(
+            numbers: &[i32],
+            bin: &mut Vec<i32>,
+            number_string: &mut String,
+            number_set: &mut HashSet<String>,
+        ) {
+            if number_string.len() == numbers.len() {
+                if !number_set.contains(number_string) {
+                    number_set.insert(number_string.clone());
                 }
                 return;
             }
@@ -54,43 +86,76 @@ fn solve(numbers: &[i32], operators: &str)  {
                     continue;
                 }
                 bin[i] = 1;
-                numberString.push(('0' as u8 + numbers[i] as u8) as char);
-                make_numbers(numbers, bin, numberString, numberSet);
-                numberString.pop();
+                number_string.push(('0' as u8 + numbers[i] as u8) as char);
+                make_numbers(numbers, bin, number_string, number_set);
+                number_string.pop();
                 bin[i] = 0;
             }
         }
-        make_numbers(numbers, &mut bin, &mut numberString, &mut numberSet);
+        make_numbers(numbers, &mut bin, &mut number_string, &mut number_set);
     }
-    let mut expressionSet:HashSet<String> = HashSet::new();
-    for mut numberString in numberSet {
+    // Inject operators,
+    // like 1234+++ 1234+-- 123+4++ 12*34*+ ....
+    let mut expression_set: HashSet<String> = HashSet::new();
+    for mut number_string in number_set {
         let mut result = "".to_string();
-        fn inject_operators(numberString: &mut String, operator: &str, result: &mut String, numberCount: i32, operatorCount: i32, expressionSet:&mut HashSet<String>) {
-            if numberString.len() == 0 && numberCount == operatorCount + 1 {
-                if !expressionSet.contains(result) {
-                    expressionSet.insert(result.clone());
+        fn inject_operators(
+            number_string: &mut String,
+            operator: &str,
+            result: &mut String,
+            number_count: i32,
+            operator_count: i32,
+            expression_set: &mut HashSet<String>,
+        ) {
+            if number_string.len() == 0 && number_count == operator_count + 1 {
+                if !expression_set.contains(result) {
+                    expression_set.insert(result.clone());
                 }
                 return;
             }
-            if numberCount > operatorCount + 1 {
+            if number_count > operator_count + 1 {
                 for c in operator.chars() {
                     result.push(c);
-                    inject_operators(numberString, operator, result, numberCount, operatorCount + 1, expressionSet);
+                    inject_operators(
+                        number_string,
+                        operator,
+                        result,
+                        number_count,
+                        operator_count + 1,
+                        expression_set,
+                    );
                     result.pop();
                 }
             }
-            if numberString.len() > 0 {
-                let c = match numberString.pop() { Some(x) => x, _ => ' ' };
+            if number_string.len() > 0 {
+                let c = number_string.pop().unwrap();
                 result.push(c);
-                inject_operators(numberString, operator, result, numberCount + 1, operatorCount, expressionSet);
+                inject_operators(
+                    number_string,
+                    operator,
+                    result,
+                    number_count + 1,
+                    operator_count,
+                    expression_set,
+                );
                 result.pop();
-                numberString.push(c);
+                number_string.push(c);
             }
         }
-        inject_operators(&mut numberString, operators, &mut result, 0, 0, &mut expressionSet);
+        inject_operators(
+            &mut number_string,
+            operators,
+            &mut result,
+            0,
+            0,
+            &mut expression_set,
+        );
     }
-    for mut expressionString in expressionSet {
-        println!("{}", expressionString);
+    for mut expression_string in expression_set {
+        let result = calculate_expression(&expression_string);
+        if result {
+            println!("{}", expression_string);
+        }
     }
 }
 
