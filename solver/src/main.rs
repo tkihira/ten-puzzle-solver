@@ -1,34 +1,12 @@
 use std::collections::HashSet;
 
-struct Rational {
-    numerator: i64,
-    denominator: i64,
-}
-
-fn calculate(left: &Rational, right: &Rational, op: char) -> Rational {
-    let ln = left.numerator;
-    let ld = left.denominator;
-    let rn = right.numerator;
-    let rd = right.denominator;
-
-    let n = match op {
-        '+' => ln * rd + rn * ld,
-        '-' => ln * rd - rn * ld,
-        '*' => ln * rn,
-        '/' => ln * rd,
+fn calculate(left: f64, right: f64, op: char) -> f64 {
+    let r = match op {
+        '+' => left + right,
+        '-' => left - right,
+        '*' => left * right,
+        '/' => left / right,
         _ => panic!("unknown operator"),
-    };
-    let d = match op {
-        '+' => ld * rd,
-        '-' => ld * rd,
-        '*' => ld * rd,
-        '/' => ld * rn,
-        _ => panic!("unknown operator"),
-    };
-
-    let r = Rational {
-        numerator: n,
-        denominator: d,
     };
     return r;
 }
@@ -41,38 +19,23 @@ fn calculate_expression(expression_string: &str, goal: i32) -> (bool, bool) {
             '+' | '-' | '*' | '/' => {
                 let right = stack.pop().unwrap();
                 let left = stack.pop().unwrap();
-                let r = calculate(&left, &right, c);
-                if r.denominator == 0 {
-                    // divided by 0
-                    return (false, false);
-                }
+                let r = calculate(left, right, c);
+
                 if c == '/' {
-                    // Euclidean Algorithm
-                    let mut u = r.numerator;
-                    let mut v = r.denominator;
-                    while v != 0 {
-                        let t = u % v;
-                        u = v;
-                        v = t;
-                    }
-                    // u is GCD
-                    if (r.numerator / u) % (r.denominator / u) != 0 {
+                    if (r as i64 as f64) != r {
                         difficulty = true;
                     }
                 }
                 stack.push(r);
             }
             '0'...'9' => {
-                stack.push(Rational {
-                    numerator: c as i64 - '0' as i64,
-                    denominator: 1,
-                });
+                stack.push((c as i64 - '0' as i64) as f64);
             }
             _ => panic!("unkwown character"),
         }
     }
     let result = stack.pop().unwrap();
-    if result.numerator == result.denominator * goal as i64 {
+    if goal as f64 - 0.00001 < result && result < goal as f64 + 0.00001 {
         return (true, difficulty);
     }
     return (false, false);
