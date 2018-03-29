@@ -33,7 +33,7 @@ fn calculate(left: &Rational, right: &Rational, op: char) -> Rational {
     return r;
 }
 
-fn calculate_expression(expression_string: &str) -> (bool, bool) {
+fn calculate_expression(expression_string: &str, goal: i32) -> (bool, bool) {
     let mut stack = vec![];
     let mut difficulty = false;
     for c in expression_string.chars() {
@@ -72,13 +72,13 @@ fn calculate_expression(expression_string: &str) -> (bool, bool) {
         }
     }
     let result = stack.pop().unwrap();
-    if result.numerator == result.denominator * 10 {
+    if result.numerator == result.denominator * goal as i64 {
         return (true, difficulty);
     }
     return (false, false);
 }
 
-fn solve(numbers: &[i32], operators: &str) {
+fn solve(numbers: &[i32], operators: &str, goal: i32) -> (Vec<String>, String, bool) {
     // Make possible numbers,
     // like 1234 1243 1324 1342 1423 1432 2134 2143 2314 2341 2413 2431
     //      3124 3142 3214 3241 3412 3421 4123 4132 4213 4231 4312 4321
@@ -170,34 +170,25 @@ fn solve(numbers: &[i32], operators: &str) {
         );
     }
     {
-        let mut result_count = 0;
+        // solve and gather data
         let mut entire_difficulty = true;
         let mut example_solution = "".to_string();
+        let mut solutions = vec![];
         for mut expression_string in expression_set {
-            let (result, difficulty) = calculate_expression(&expression_string);
+            let (result, difficulty) = calculate_expression(&expression_string, goal);
             if result {
-                result_count += 1;
                 entire_difficulty &= difficulty;
                 if difficulty {
                     if example_solution.len() == 0 {
-                        example_solution = expression_string;
+                        example_solution = expression_string.clone();
                     }
                 } else {
-                    example_solution = expression_string;
+                    example_solution = expression_string.clone();
                 }
+                solutions.push(expression_string);
             }
         }
-        if result_count > 0 {
-            print!("{:>6}:", result_count);
-            for n in numbers {
-                print!("{}", n);
-            }
-            print!(":{}", example_solution);
-            if entire_difficulty {
-                print!("  !");
-            }
-            println!();
-        }
+        return (solutions, example_solution, entire_difficulty);
     }
 }
 
@@ -206,7 +197,16 @@ fn main() {
         for i1 in i0..10 {
             for i2 in i1..10 {
                 for i3 in i2..10 {
-                    solve(&[i0, i1, i2, i3], "+-*/");
+                    let (solutions, example_solution, difficulty) =
+                        solve(&[i0, i1, i2, i3], "+-*/", 10);
+                    if solutions.len() > 0 {
+                        let numbers = format!("{}{}{}{}", i0, i1, i2, i3);
+                        print!("{:>5}:{}:{}", solutions.len(), numbers, example_solution);
+                        if difficulty {
+                            print!("  !");
+                        }
+                        println!();
+                    }
                 }
             }
         }
