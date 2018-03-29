@@ -33,17 +33,36 @@ fn calculate(left: &Rational, right: &Rational, op: char) -> Rational {
     return r;
 }
 
-fn calculate_expression(expression_string: &str) -> bool {
+fn calculate_expression(expression_string: &str) -> (bool, bool) {
     let mut stack = vec![];
+    let mut difficulty = false;
     for c in expression_string.chars() {
         match c {
             '+' | '-' | '*' | '/' => {
                 let right = stack.pop().unwrap();
                 let left = stack.pop().unwrap();
-                stack.push(calculate(&left, &right, c));
+                let r = calculate(&left, &right, c);
+                if r.denominator == 0 {
+                    // divided by 0
+                    return (false, false);
+                }
+                if c == '/' {
+                    // Euclidean Algorithm
+                    let mut u = r.numerator;
+                    let mut v = r.denominator;
+                    while v != 0 {
+                        let t = u % v;
+                        u = v;
+                        v = t;
+                    }
+                    // u is GCD
+                    if (r.numerator / u) % (r.denominator / u) != 0 {
+                        difficulty = true;
+                    }
+                }
+                stack.push(r);
             }
             '0'...'9' => {
-                // expected '0' - '9'
                 stack.push(Rational {
                     numerator: c as i64 - '0' as i64,
                     denominator: 1,
@@ -54,10 +73,9 @@ fn calculate_expression(expression_string: &str) -> bool {
     }
     let result = stack.pop().unwrap();
     if result.numerator == result.denominator * 10 {
-        return true;
-        //println!("{}", expression_string);
+        return (true, difficulty);
     }
-    return false;
+    return (false, false);
 }
 
 fn solve(numbers: &[i32], operators: &str) {
@@ -151,15 +169,49 @@ fn solve(numbers: &[i32], operators: &str) {
             &mut expression_set,
         );
     }
-    for mut expression_string in expression_set {
-        let result = calculate_expression(&expression_string);
-        if result {
-            println!("{}", expression_string);
+    {
+        let mut result_count = 0;
+        let mut entire_difficulty = true;
+        let mut example_solution = "".to_string();
+        for mut expression_string in expression_set {
+            let (result, difficulty) = calculate_expression(&expression_string);
+            if result {
+                result_count += 1;
+                entire_difficulty &= difficulty;
+                if difficulty {
+                    if example_solution.len() == 0 {
+                        example_solution = expression_string;
+                    }
+                } else {
+                    example_solution = expression_string;
+                }
+            }
+        }
+        if result_count > 0 {
+            print!("{:>6}:", result_count);
+            for n in numbers {
+                print!("{}", n);
+            }
+            print!(":{}", example_solution);
+            if entire_difficulty {
+                print!("  !");
+            }
+            println!();
         }
     }
 }
 
 fn main() {
-    let numbers = &[1, 1, 5, 8];
-    solve(numbers, "+-*/");
+    for i0 in 0..10 {
+        for i1 in i0..10 {
+            for i2 in i1..10 {
+                for i3 in i2..10 {
+                    solve(&[i0, i1, i2, i3], "+-*/");
+                }
+            }
+        }
+    }
+
+    //let numbers = &[6, 6, 6, 9, 9];
+    //solve(numbers, "+-*/");
 }
