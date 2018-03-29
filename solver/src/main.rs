@@ -200,32 +200,39 @@ fn main() {
         for i1 in i0..10 {
             for i2 in i1..10 {
                 for i3 in i2..10 {
-                    let numbers = format!("{}{}{}{}", i0, i1, i2, i3);
-                    print!("{}:", numbers);
-                    for goal in 0..101 {
+                    let mut line = format!("{}{}{}{}:", i0, i1, i2, i3);
+                    let mut continuous_solved_count = -1;
+                    let mut solved_count = 0;
+                    for goal in 1..101 {
                         let (solutions, _example_solution, difficulty) =
                             solve(&[i0, i1, i2, i3], "+-*/", goal);
                         if solutions.len() > 0 {
+                            solved_count += 1;
                             if difficulty {
-                                print!("!")
+                                line += "!";
                             } else {
                                 if solutions.len() > 9 {
-                                    print!("#");
+                                    line += "#";
                                 } else {
-                                    print!("{}", solutions.len());
+                                    line += &format!("{}", solutions.len());
                                 }
                             }
                         } else {
-                            print!("_");
+                            if continuous_solved_count == -1 {
+                                continuous_solved_count = solved_count;
+                            }
+                            line += "_";
                         }
                         if goal % 10 == 0 {
-                            print!("|")
+                            line += "|"
                         }
                     }
-                    println!();
+                    println!(
+                        "{:>4}:{:>2}:{}",
+                        continuous_solved_count, solved_count, line
+                    );
                 }
             }
         }
     }
-
 }
