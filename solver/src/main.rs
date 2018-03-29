@@ -6,17 +6,19 @@ fn calculate(left: f64, right: f64, op: char) -> f64 {
         '-' => left - right,
         '*' => left * right,
         '/' => left / right,
+        '^' => left.powf(right),
         _ => panic!("unknown operator"),
     };
     return r;
 }
 
-fn calculate_expression(expression_string: &str, goal: i32) -> (bool, bool) {
+fn calculate_expression(expression_string: &str, goal: i32) -> (bool, bool, bool) {
     let mut stack = vec![];
     let mut difficulty = false;
+    let mut difficulty_pow = false;
     for c in expression_string.chars() {
         match c {
-            '+' | '-' | '*' | '/' => {
+            '+' | '-' | '*' | '/' | '^' => {
                 let right = stack.pop().unwrap();
                 let left = stack.pop().unwrap();
                 let r = calculate(left, right, c);
@@ -25,6 +27,9 @@ fn calculate_expression(expression_string: &str, goal: i32) -> (bool, bool) {
                     if (r as i64 as f64) != r {
                         difficulty = true;
                     }
+                }
+                if c == '^' {
+                    difficulty_pow = true;
                 }
                 stack.push(r);
             }
@@ -36,12 +41,12 @@ fn calculate_expression(expression_string: &str, goal: i32) -> (bool, bool) {
     }
     let result = stack.pop().unwrap();
     if goal as f64 - 0.00001 < result && result < goal as f64 + 0.00001 {
-        return (true, difficulty);
+        return (true, difficulty, difficulty_pow);
     }
-    return (false, false);
+    return (false, false, false);
 }
 
-fn solve(numbers: &[i32], operators: &str, goal: i32) -> (Vec<String>, String, bool) {
+fn solve(numbers: &[i32], operators: &str, goal: i32) -> (Vec<String>, String, bool, bool) {
     // Make possible numbers,
     // like 1234 1243 1324 1342 1423 1432 2134 2143 2314 2341 2413 2431
     //      3124 3142 3214 3241 3412 3421 4123 4132 4213 4231 4312 4321
@@ -135,12 +140,14 @@ fn solve(numbers: &[i32], operators: &str, goal: i32) -> (Vec<String>, String, b
     {
         // solve and gather data
         let mut entire_difficulty = true;
+        let mut entire_difficulty_pow = true;
         let mut example_solution = "".to_string();
         let mut solutions = vec![];
         for mut expression_string in expression_set {
-            let (result, difficulty) = calculate_expression(&expression_string, goal);
+            let (result, difficulty, difficulty_pow) = calculate_expression(&expression_string, goal);
             if result {
                 entire_difficulty &= difficulty;
+                entire_difficulty_pow &= difficulty_pow;
                 if difficulty {
                     if example_solution.len() == 0 {
                         example_solution = expression_string.clone();
@@ -151,7 +158,7 @@ fn solve(numbers: &[i32], operators: &str, goal: i32) -> (Vec<String>, String, b
                 solutions.push(expression_string);
             }
         }
-        return (solutions, example_solution, entire_difficulty);
+        return (solutions, example_solution, entire_difficulty, entire_difficulty_pow);
     }
 }
 
@@ -160,13 +167,16 @@ fn main() {
         for i1 in i0..10 {
             for i2 in i1..10 {
                 for i3 in i2..10 {
-                    let (solutions, example_solution, difficulty) =
-                        solve(&[i0, i1, i2, i3], "+-*/", 10);
+                    let (solutions, example_solution, difficulty, difficulty_pow) =
+                        solve(&[i0, i1, i2, i3], "+-*/^", 10);
                     if solutions.len() > 0 {
                         let numbers = format!("{}{}{}{}", i0, i1, i2, i3);
                         print!("{:>5}:{}:{}", solutions.len(), numbers, example_solution);
                         if difficulty {
                             print!("  !");
+                        }
+                        if difficulty_pow {
+                            print!("  ^");
                         }
                         println!();
                     }
