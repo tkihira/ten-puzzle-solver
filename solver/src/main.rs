@@ -186,6 +186,9 @@ fn solve(numbers: &[i32], operators: &str, goal: i32) -> (Vec<String>, String, b
                     example_solution = expression_string.clone();
                 }
                 solutions.push(expression_string);
+                if solutions.len() > 9 {
+                    break;
+                }
             }
         }
         return (solutions, example_solution, entire_difficulty);
@@ -197,21 +200,32 @@ fn main() {
         for i1 in i0..10 {
             for i2 in i1..10 {
                 for i3 in i2..10 {
-                    let (solutions, example_solution, difficulty) =
-                        solve(&[i0, i1, i2, i3], "+-*/", 10);
-                    if solutions.len() > 0 {
-                        let numbers = format!("{}{}{}{}", i0, i1, i2, i3);
-                        print!("{:>5}:{}:{}", solutions.len(), numbers, example_solution);
-                        if difficulty {
-                            print!("  !");
+                    let numbers = format!("{}{}{}{}", i0, i1, i2, i3);
+                    print!("{}:", numbers);
+                    for goal in 0..101 {
+                        let (solutions, _example_solution, difficulty) =
+                            solve(&[i0, i1, i2, i3], "+-*/", goal);
+                        if solutions.len() > 0 {
+                            if difficulty {
+                                print!("!")
+                            } else {
+                                if solutions.len() > 9 {
+                                    print!("#");
+                                } else {
+                                    print!("{}", solutions.len());
+                                }
+                            }
+                        } else {
+                            print!("_");
                         }
-                        println!();
+                        if goal % 10 == 0 {
+                            print!("|")
+                        }
                     }
+                    println!();
                 }
             }
         }
     }
 
-    //let numbers = &[6, 6, 6, 9, 9];
-    //solve(numbers, "+-*/");
 }
